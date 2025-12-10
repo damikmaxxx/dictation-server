@@ -17,3 +17,5 @@ dist
 # Файлы БД (для прода)
 /secrets/google-key.json
 /uploads/
+Dockerfile
+docker-compose.yml
