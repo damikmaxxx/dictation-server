@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                 @id @default(autoincrement())
+  email            String              @unique
+  password         String
+  name             String?
+
+  role             Role                @default(USER)
+  refreshToken     String?  
+  dictations       Dictation[]
+  words            Word[]
+  
+  wordHistory      WordPractice[]
+  dictationHistory DictationPractice[]
+  
+  createdAt        DateTime            @default(now())
+}
+
+model Dictation {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  
+  words       Word[]
+  history     DictationPractice[]
+  
+  language    String   @default("ru")
+
+  authorId    Int
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model DictationPractice {
+  id          Int      @id @default(autoincrement())
+  score       Int      
+  
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  dictationId Int
+  dictation   Dictation @relation(fields: [dictationId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model Word {
+  id          Int      @id @default(autoincrement())
+  text        String
+  audioUrl    String? @db.Text
+  hint        String?
+  language    String   @default("ru")
+
+  dictationId Int?
+  dictation   Dictation? @relation(fields: [dictationId], references: [id])
+  
+  authorId    Int
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  practices   WordPractice[]
+
+  createdAt   DateTime @default(now())
+}
+
+model WordPractice {
+  id          Int      @id @default(autoincrement())
+  isCorrect   Boolean
+  userInput   String
+  
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  wordId      Int
+  word        Word     @relation(fields: [wordId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+
+enum Role {
+  USER
+  ADMIN
+}

@@ -1,0 +1,19 @@
+# IDE
+.vscode
+.idea
+
+# Зависимости
+node_modules
+
+# Секреты
+.env
+.env.*
+
+# Сборка
+dist
+# Логи
+*.log
+
+# Файлы БД (для прода)
+/secrets/google-key.json
+/uploads/
