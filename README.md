@@ -42,6 +42,7 @@
 
 #### 1. Клонирование репозитория
 
-```bash
-git clone <URL_ВАШЕГО_РЕПОЗИТОРИЯ>
-cd dictant-platform
+git clone https://github.com/damikmaxxx/dictation-server.git
+cd 
+npm install
+npm run dev
