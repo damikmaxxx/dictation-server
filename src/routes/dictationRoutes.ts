@@ -100,10 +100,19 @@ router.use(authMiddleware);
  *                 example: en
  *               words:
  *                 type: array
- *                 description: Полный новый список слов (массив строк) для замены.
+ *                 description: Полный новый список слов (массив объектов) для замены.
  *                 items:
- *                   type: string
- *                   example: phenomenon
+ *                   type: object
+ *                   properties:
+ *                     text:
+ *                       type: string
+ *                       example: phenomenon
+ *                     hint:
+ *                       type: string
+ *                       example: Явление (опционально)
+ *                     audioUrl:
+ *                       type: string
+ *                       example: /uploads/tts-123.mp3 (опционально)
  *             required: [title, words]
  *     responses:
  *       200:
@@ -131,6 +140,43 @@ router.use(authMiddleware);
  *         description: Нет прав (не является владельцем).
  *       404:
  *         description: Диктант не найден.
+ * /dictations/complete:
+ *   post:
+ *     summary: Сохранение сводного отчета о прохождении диктанта
+ *     tags: [Dictations]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dictationId:
+ *                 type: integer
+ *                 example: 5
+ *               score:
+ *                 type: integer
+ *                 example: 85
+ *               totalWords:
+ *                 type: integer
+ *                 example: 10
+ *               correctCount:
+ *                 type: integer
+ *                 example: 8
+ *               errors:
+ *                 type: array
+ *                 description: Массив детальных ошибок
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     word: { type: string, example: Apple }
+ *                     userInput: { type: string, example: Aple }
+ *             required: [dictationId, score, totalWords, correctCount]
+ *     responses:
+ *       201:
+ *         description: Результат сохранен.
  */
 router.post('/', controller.createWithWords.bind(controller));
 router.post('/complete', controller.complete.bind(controller));

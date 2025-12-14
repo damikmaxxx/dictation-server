@@ -80,13 +80,22 @@ export class DictationController {
   async complete(req: Request, res: Response) {
     try {
       const userId = (req as AuthRequest).user?.id;
-      const { dictationId, score } = req.body;
+      // Получаем все 5 полей
+      const { dictationId, score, totalWords, correctCount, errors } = req.body;
 
-      if (!userId || !dictationId || score === undefined) {
-        return res.status(400).json({ message: 'Missing data' });
+      if (!userId || !dictationId || score === undefined || totalWords === undefined || correctCount === undefined) {
+        return res.status(400).json({ message: 'Missing required practice fields: dictationId, score, totalWords, correctCount.' });
       }
 
-      const result = await service.savePractice(userId, Number(dictationId), Number(score));
+      // Вызываем сервис с новыми аргументами
+      const result = await service.savePractice(
+        userId, 
+        Number(dictationId), 
+        Number(score), 
+        Number(totalWords), 
+        Number(correctCount), 
+        errors || [] // Передаем массив ошибок (если нет, то пустой массив)
+      );
       res.status(201).json(result);
     } catch (error) {
       res.status(500).json({ message: 'Error saving result' });

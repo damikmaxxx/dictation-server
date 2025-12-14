@@ -1,6 +1,6 @@
 import prisma from '../db';
 import { TtsService } from './ttsService';
-
+import { Prisma } from '@prisma/client';
 
 export interface WordItem {
     text: string;
@@ -82,12 +82,18 @@ export class DictationService {
     });
   }
 
-  async savePractice(userId: number, dictationId: number, score: number) {
+  async savePractice(userId: number, dictationId: number, score: number, totalWords: number, correctCount: number, errors: any[]) {
+    
+    const errorsData = errors.length > 0 ? errors : Prisma.DbNull; 
+
     return await prisma.dictationPractice.create({
       data: {
         userId,
         dictationId,
-        score
+        score,
+        totalWords,
+        correctCount,
+        errors: errorsData, 
       }
     });
   }

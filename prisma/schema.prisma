@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -44,6 +45,10 @@ model DictationPractice {
   id          Int      @id @default(autoincrement())
   score       Int      
   
+  totalWords  Int      @default(0) 
+  correctCount Int     @default(0) 
+  errors      Json?    
+
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
   
