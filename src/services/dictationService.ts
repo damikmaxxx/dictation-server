@@ -1,13 +1,8 @@
 import prisma from '../db';
 import { TtsService } from './ttsService';
 import { Prisma } from '@prisma/client';
-
-export interface WordItem {
-    text: string;
-    hint?: string;
-    audioUrl?: string;
-}
-
+import { validateWordContent } from '../utils/validator'; 
+import { WordItemDto } from '../dtos/dictation.schema'; 
 
 export class DictationService {
   async createDictation(userId: number, title: string, language: string, description?: string) {
@@ -21,51 +16,52 @@ export class DictationService {
     });
   }
 
-  async createDictationWithWords(
+async createDictationWithWords(
         userId: number, 
         title: string, 
         language: string, 
-        wordsArray: WordItem[],
+        wordsArray: WordItemDto[], 
+        isPublic: boolean,
         description?: string 
     ) {
-    return prisma.$transaction(async (tx) => {
-
-      const newDictation = await tx.dictation.create({
-        data: {
-          title,
-          language,
-          description,
-          authorId: userId,
-        },
-      });
-      console.log(wordsArray," wordsArray");
-      const wordsToInsert = [];
-      const ttsServiceInstance = new TtsService();
-
-      for (const wordData of wordsArray) {
-        let audioUrl: string | null = wordData.audioUrl || null; 
-
-        if (audioUrl === null) {
-          const lang = language || 'ru';
-          audioUrl = await ttsServiceInstance.generateAndSave(wordData.text, lang);
+        for (const word of wordsArray) {
+            validateWordContent(word.text, language);
         }
 
-        wordsToInsert.push({
-          text: wordData.text,
-          hint: wordData.hint,
-          audioUrl: audioUrl, 
-          authorId: userId,
-          dictationId: newDictation.id,
+        return prisma.$transaction(async (tx) => {
+            const newDictation = await tx.dictation.create({
+                data: { title, language, description, isPublic, authorId: userId },
+            });
+
+            const wordsToInsert = [];
+            const ttsServiceInstance = new TtsService();
+
+            for (const wordData of wordsArray) {
+                let audioUrl: string | null = wordData.audioUrl || null;
+                
+                if (audioUrl === null) {
+                    try {
+                        const lang = language || 'ru'; 
+                        audioUrl = await ttsServiceInstance.generateAndSave(wordData.text, lang);
+                    } catch (ttsError) {
+                        console.error(`Failed to generate audio for "${wordData.text}":`, ttsError);
+                        audioUrl = null; 
+                    }
+                }
+
+                wordsToInsert.push({
+                    text: wordData.text,
+                    hint: wordData.hint || null,
+                    audioUrl: audioUrl,
+                    authorId: userId,
+                    dictationId: newDictation.id,
+                });
+            }
+
+            await tx.word.createMany({ data: wordsToInsert });
+            return newDictation;
         });
-      }
-
-      await tx.word.createMany({
-        data: wordsToInsert,
-      });
-
-      return newDictation; 
-    });
-  }
+    }
 
   async getAll(userId: number) {
     return await prisma.dictation.findMany({
@@ -83,8 +79,8 @@ export class DictationService {
   }
 
   async savePractice(userId: number, dictationId: number, score: number, totalWords: number, correctCount: number, errors: any[]) {
-    
-    const errorsData = errors.length > 0 ? errors : Prisma.DbNull; 
+
+    const errorsData = errors.length > 0 ? errors : Prisma.DbNull;
 
     return await prisma.dictationPractice.create({
       data: {
@@ -93,7 +89,7 @@ export class DictationService {
         score,
         totalWords,
         correctCount,
-        errors: errorsData, 
+        errors: errorsData,
       }
     });
   }
@@ -125,51 +121,90 @@ export class DictationService {
   }
 
 
-  async updateFullDictation(
+ async updateFullDictation(
         dictationId: number, 
         userId: number, 
         title: string, 
         description: string | undefined, 
         language: string, 
-        wordsArray: WordItem[]
+        isPublic: boolean | undefined, 
+        wordsArray: WordItemDto[]
     ) {
         const dictation = await prisma.dictation.findUnique({ where: { id: dictationId } });
         if (!dictation) throw new Error('Dictation not found');
         if (dictation.authorId !== userId) throw new Error('Access denied: not the owner');
 
+        for (const word of wordsArray) {
+            validateWordContent(word.text, language);
+        }
+
         return prisma.$transaction(async (tx) => {
-            
             await tx.dictation.update({
                 where: { id: dictationId },
-                data: { title, description, language }
+                data: { 
+                    title, 
+                    description, 
+                    language,
+                    isPublic
+                }
             });
 
-            await tx.word.deleteMany({
-                where: { dictationId: dictationId }
-            });
+            await tx.word.deleteMany({ where: { dictationId: dictationId } });
 
             const wordsToInsert = [];
             const ttsServiceInstance = new TtsService();
 
             for (const wordData of wordsArray) {
+                let audioUrl: string | null = wordData.audioUrl || null; 
                 
-                const lang = language || 'ru'; 
-                const audioUrl = await ttsServiceInstance.generateAndSave(wordData.text, lang);
+                if (audioUrl === null) {
+                    try {
+                        const lang = language || 'ru'; 
+                        audioUrl = await ttsServiceInstance.generateAndSave(wordData.text, lang);
+                    } catch (ttsError) {
+                        console.error(`Failed to generate audio for "${wordData.text}":`, ttsError);
+                        audioUrl = null;
+                    }
+                }
 
-              wordsToInsert.push({
-                  text: wordData.text,
-                  hint: wordData.hint || null, 
-                  audioUrl: audioUrl,
-                  authorId: userId,
-                  dictationId: dictationId,
-              });
+                wordsToInsert.push({
+                    text: wordData.text,
+                    hint: wordData.hint || null,
+                    audioUrl: audioUrl,
+                    authorId: userId,
+                    dictationId: dictationId,
+                });
             }
 
-            await tx.word.createMany({
-                data: wordsToInsert,
-            });
-
+            await tx.word.createMany({ data: wordsToInsert });
             return tx.dictation.findUnique({ where: { id: dictationId } }); 
+        });
+    }
+  async getHistory(userId: number) {
+    return await prisma.dictationPractice.findMany({
+      where: { userId: userId },
+      include: {
+        dictation: {
+          select: {
+            id: true,
+            title: true,
+            language: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+    async getPublic() {
+        return await prisma.dictation.findMany({
+            where: { isPublic: true }, 
+            include: {
+                author: {
+                    select: { id: true, name: true, email: true }
+                },
+            },
+            orderBy: { createdAt: 'desc' }
         });
     }
 }

@@ -2,20 +2,23 @@ import { Request, Response } from 'express';
 import { WordService } from '../services/wordService';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
+import { CreateWordInput } from '../dtos/word.schema';
 const wordService = new WordService();
 
 export class WordController {
 
-    async create(req: Request, res: Response) {
+    async create(req: Request<{}, {}, CreateWordInput>, res: Response) {
         try {
-            const userId = (req as AuthRequest).user?.id;
+            const userId = (req as AuthRequest).user!.id;
             const { text, hint, audioUrl, dictationId } = req.body;
 
-            if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-            if (!text) return res.status(400).json({ message: 'Text required' });
-            if (!dictationId) return res.status(400).json({ message: 'Dictation ID required' });
-
-            const word = await wordService.createWord(userId, text, Number(dictationId), hint, audioUrl);
+            const word = await wordService.createWord(
+                userId, 
+                text, 
+                dictationId, 
+                hint || undefined, 
+                audioUrl || undefined
+            );
 
             res.status(201).json(word);
         } catch (error) {
@@ -34,11 +37,8 @@ export class WordController {
     }
     async delete(req: Request, res: Response) {
         try {
-            const userId = (req as AuthRequest).user?.id;
+            const userId = (req as AuthRequest).user!.id;
             const wordId = Number(req.params.id);
-
-            if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-            if (!wordId) return res.status(400).json({ message: 'Word ID required' });
 
             await wordService.deleteWord(wordId, userId);
 
@@ -46,6 +46,9 @@ export class WordController {
         } catch (error: any) {
             if (error.message === 'Access denied') {
                 return res.status(403).json({ message: 'You cannot delete this word' });
+            }
+            if (error.message === 'Word not found') {
+                return res.status(404).json({ message: 'Word not found' });
             }
             res.status(500).json({ message: 'Error deleting word' });
         }

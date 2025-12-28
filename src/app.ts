@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import path from 'path'; 
 import swaggerUi from 'swagger-ui-express'; 
 import swaggerSpec from './swagger';       
+
 
 import authRoutes from './routes/authRoutes';
 import wordRoutes from './routes/wordRoutes';
@@ -11,6 +13,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import cookieParser from 'cookie-parser'; 
 const app = express();
 app.use(cookieParser());
+app.use(morgan('dev')); 
 app.use(cors());
 app.use(express.json());
 

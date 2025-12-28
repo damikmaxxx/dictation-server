@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { authMiddleware } from '../middlewares/authMiddleware';
-
+import { validate } from '../middlewares/validate'; 
+import { registerSchema, loginSchema } from '../dtos/auth.schema';
 const router = Router();
 const controller = new AuthController();
 
@@ -42,8 +43,7 @@ const controller = new AuthController();
  *       400:
  *         description: Ошибка валидации (например, email уже существует).
  */
-router.post('/register', controller.register.bind(controller));
-
+router.post('/register', validate(registerSchema), controller.register.bind(controller));
 
 /**
  * @swagger
@@ -80,7 +80,7 @@ router.post('/register', controller.register.bind(controller));
  *         description: Неверный логин или пароль.
  */
 
-router.post('/login', controller.login.bind(controller));
+router.post('/login', validate(loginSchema), controller.login.bind(controller));
 
 
 /**

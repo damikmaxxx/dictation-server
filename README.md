@@ -43,6 +43,22 @@
 #### 1. Клонирование репозитория
 
 git clone https://github.com/damikmaxxx/dictation-server.git
-cd 
+cd dictation-server 
 npm install
+npm run dev
+
+
+.env
+# Порт сервера
+PORT=5000
+
+# Строка подключения к PostgreSQL
+# Формат: postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME
+DATABASE_URL="postgresql://postgres:root@localhost:5432/dictant?schema=public"
+JWT_SECRET=""
+
+
+npx prisma generate
+npx prisma db push
+
 npm run dev

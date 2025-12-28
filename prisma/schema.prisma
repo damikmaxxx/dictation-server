@@ -34,6 +34,8 @@ model Dictation {
   history     DictationPractice[]
   
   language    String   @default("ru")
+  
+  isPublic    Boolean  @default(false)
 
   authorId    Int
   author      User     @relation(fields: [authorId], references: [id])

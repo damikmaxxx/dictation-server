@@ -1,13 +1,12 @@
-// src/routes/wordRoutes.ts
+
 import { Router } from 'express';
 import { WordController } from '../controllers/wordController';
-import { authMiddleware } from '../middlewares/authMiddleware'; // Импорт
-
+import { authMiddleware } from '../middlewares/authMiddleware'; 
+import { validate } from '../middlewares/validate';
+import { createWordSchema, wordIdSchema } from '../dtos/word.schema'; 
 const router = Router();
 const controller = new WordController();
 
-// src/routes/wordRoutes.ts
-// ...
 /**
  * @swagger
  * /words:
@@ -50,13 +49,16 @@ const controller = new WordController();
  *       200:
  *         description: Список всех слов в системе.
  */
-router.post('/', authMiddleware, controller.create.bind(controller)); 
+router.post('/', 
+  authMiddleware, 
+  validate(createWordSchema), 
+  controller.create.bind(controller)
+);
 
 router.get('/', controller.getAll.bind(controller));
 
 
-// src/routes/wordRoutes.ts
-// ...
+
 /**
  * @swagger
  * /words/{id}:
@@ -81,5 +83,9 @@ router.get('/', controller.getAll.bind(controller));
  *         description: Слово не найдено.
  */
 
-router.delete('/:id', authMiddleware, controller.delete.bind(controller)); // :id означает, что ID будет в адресе
+router.delete('/:id', 
+  authMiddleware, 
+  validate(wordIdSchema), 
+  controller.delete.bind(controller)
+);
 export default router;

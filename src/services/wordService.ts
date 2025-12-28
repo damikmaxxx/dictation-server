@@ -1,7 +1,7 @@
 import prisma from '../db';
 
 export class WordService {
-    async createWord(userId: number, text: string, dictationId: number, hint?: string, audioUrl?: string) {
+    async createWord(userId: number, text: string, dictationId: number| null, hint?: string, audioUrl?: string| null) {
         return await prisma.word.create({
             data: {
                 text,

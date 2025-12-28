@@ -4,8 +4,6 @@ import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// src/routes/uploadRoutes.ts
-// ...
 /**
  * @swagger
  * /upload:

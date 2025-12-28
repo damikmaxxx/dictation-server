@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/authService';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import { RegisterInput, LoginInput } from '../dtos/auth.schema';
 import prisma from '../db'; 
 
 const authService = new AuthService();
@@ -17,34 +18,22 @@ export class AuthController {
     });
   }
   
-  async register(req: Request, res: Response) {
+  async register(req: Request<{}, {}, RegisterInput>, res: Response) {
     try {
       const { email, password, name } = req.body;
-      if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password required' });
-      }
       
       const result = await authService.register(email, password, name);
-      const { user, accessToken, refreshToken } = result;
-
-      this.setCookie(res, refreshToken); 
-      res.status(201).json({ user, accessToken }); 
-      
+      res.status(201).json(result);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
 
-  async login(req: Request, res: Response) {
+  async login(req: Request<{}, {}, LoginInput>, res: Response) {
     try {
       const { email, password } = req.body;
-      
       const result = await authService.login(email, password);
-      const { user, accessToken, refreshToken } = result;
-
-      this.setCookie(res, refreshToken);
-      res.json({ user, accessToken }); 
-      
+      res.json(result);
     } catch (error: any) {
       res.status(401).json({ message: error.message });
     }
